@@ -1,4 +1,4 @@
-from google.cloud import speech
+from google.cloud import speech_v1p1beta1 as speech
 from google.protobuf.json_format import MessageToJson, MessageToDict
 import io, os, json
 
@@ -52,7 +52,7 @@ def transcribe_gcs(gcs_uri):
         enable_word_time_offsets=True,
         enable_automatic_punctuation=True,
         audio_channel_count=2,
-        # enable_separate_recognition_per_channel=True        
+        enable_separate_recognition_per_channel=True,
         # enable_word_confidence=True,
         enable_speaker_diarization=True,
         diarization_speaker_count=3,
@@ -63,8 +63,16 @@ def transcribe_gcs(gcs_uri):
     print('Waiting for operation to complete...')
     response = operation.result(timeout=90)
 
-    for result in response.results:
-        print(result.alternatives[0].transcript)
+    result = response.results[-1]
+
+    words_info = result.alternatives[0].words
+
+    # Printing out the output:
+    for word_info in words_info:
+        print(u"word: '{}', speaker_tag: {}".format(word_info.word, word_info.speaker_tag))
+
+    # for result in response.results:
+    #     print(result.alternatives[0].transcript)
     # response = MessageToJson(response)
     # response = MessageToDict(response)
     # print(response)
