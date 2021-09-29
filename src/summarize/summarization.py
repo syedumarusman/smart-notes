@@ -2,21 +2,21 @@
 import re
 import heapq
 import bs4 as bs
-import urllib.request
 import matplotlib.pyplot as plt
 
 from nltk.corpus import stopwords
 from nltk.probability import FreqDist
 from nltk import word_tokenize, sent_tokenize, download
+from flask_restful import Resource
 
-class Summarization:
+class Summarization(Resource):
     def __init__(self):
         super().__init__()
         print("Text Summarization Module\n")
         download('stopwords')
         download('punkt')
 
-    def summarize(self, text: str, sentenceCount: int = 5):
+    def get(self, text: str, sentenceCount: int = 5):
         # Cleaning Data
         text = re.sub(r'\[[0-9]*\]',' ',text)    
         text = re.sub(r'\s+',' ',text)
