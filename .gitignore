@@ -3,3 +3,6 @@
 
 # png
 *.png
+
+# Node Modules
+**/node_modules

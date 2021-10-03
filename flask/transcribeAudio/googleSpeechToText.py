@@ -28,8 +28,8 @@ class LongSpeechToText(Resource):
             encoding=speech.RecognitionConfig.AudioEncoding.LINEAR16,
             # sample_rate_hertz=44100,
             language_code="en-US",
-            enable_word_time_offsets= True,
-            enable_automatic_punctuation= True,
+            # enable_word_time_offsets= True,
+            # enable_automatic_punctuation= True,
             audio_channel_count= 2,
             enable_separate_recognition_per_channel= True,
             # enable_word_confidence=True,
@@ -72,41 +72,3 @@ class LongSpeechToText(Resource):
 
         return sentenceInfo
     # [END speech_transcribe_async_gcs]
-
-class ShortSpeechToText(Resource):
-
-    def __init__(self) -> None:
-        super().__init__()
-    
-    # transcribes short audio file into text
-    def get(self):
-        # Instantiate a client
-        client = speech.SpeechClient()
-
-        # The name of the audio file to transcribe
-        file_name = os.path.join(os.path.dirname(__file__),'../../audio-files/sample-audios/59second-audio.wav')
-
-        # Loads the audio into memory
-        with io.open(file_name, 'rb') as audio_file:
-            content = audio_file.read()
-            audio = speech.RecognitionAudio(content=content)
-
-        config = speech.RecognitionConfig(
-            encoding=speech.RecognitionConfig.AudioEncoding.LINEAR16,
-            sample_rate_hertz=44100,
-            language_code='en-US',
-            # enable_speaker_diarization=True,
-            # diarization_speaker_count=3,
-            # enable_word_time_offsets=True,
-            audio_channel_count=2,
-            # enable_separate_recognition_per_channel=True
-        )
-
-        # Detects speech in the short audio file(less than 1 min)
-        response = client.recognize(config=config, audio=audio)
-
-        compiledResponse = ''
-        for result in response.results:
-            compiledResponse = compiledResponse+"\n"+result.alternatives[0].transcript
-
-        return compiledResponse

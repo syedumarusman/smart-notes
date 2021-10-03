@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 from nltk.corpus import stopwords
 from nltk.probability import FreqDist
 from nltk import word_tokenize, sent_tokenize, download
-from flask_restful import Resource
+from flask_restful import Resource, reqparse
 
 class Summarization(Resource):
     def __init__(self):
@@ -16,9 +16,19 @@ class Summarization(Resource):
         download('stopwords')
         download('punkt')
 
-    def get(self, text: str, sentenceCount: int = 5):
+    def post(self):
+        # Request data parsing
+        parser = reqparse.RequestParser()
+        parser.add_argument('text', type=str)
+        parser.add_argument('sentenceCount', type=int)
+        args = parser.parse_args()
+        text = args['text']
+        sentenceCount = args['sentenceCount']
+        if sentenceCount == None:
+            sentenceCount = 5
+
         # Cleaning Data
-        text = re.sub(r'\[[0-9]*\]',' ',text)    
+        text = re.sub(r'\[[0-9]*\]',' ', text)    
         text = re.sub(r'\s+',' ',text)
         clean_text = text.lower()
         clean_text = re.sub(r'\W',' ',clean_text)
@@ -40,7 +50,6 @@ class Summarization(Resource):
                 else:
                     word2count[word]+=1
 
-
         # Separating Words and it's count for plotting
 
         count=list(word2count.values())
@@ -51,7 +60,7 @@ class Summarization(Resource):
         plt.figure(1, figsize=(20, 20))
         fdist = FreqDist(tokenized_words)
         fdist.plot(show=False)
-        plt.savefig('data-frequency.png', bbox_inches='tight')
+        plt.savefig('summarize/data-frequency.png', bbox_inches='tight')
         plt.close()
 
         # Weighted Histogram
@@ -80,7 +89,7 @@ class Summarization(Resource):
         plt.bar(words, count, width=0.7)
         plt.xticks(rotation=90)
         plt.title('Words Count Plot')
-        plt.savefig('word-count.png', bbox_inches='tight')
+        plt.savefig('summarize/word-count.png', bbox_inches='tight')
         plt.close()
 
         return best_sentences
