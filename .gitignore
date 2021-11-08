@@ -4,5 +4,8 @@
 # png
 *.png
 
-# Node Modules
-**/node_modules
+# audio files
+audio-files/
+
+# google cloud credentials
+flask/auth.json
