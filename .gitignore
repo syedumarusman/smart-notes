@@ -4,8 +4,18 @@
 # png
 *.png
 
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyc
+
 # audio files
 audio-files/
+flask/transcribeAudio/input-audios
 
 # google cloud credentials
 flask/auth.json
+
+# audio files
+*.mp3
