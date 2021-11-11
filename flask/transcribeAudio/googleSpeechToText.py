@@ -7,11 +7,13 @@ from werkzeug.utils import secure_filename
 import wave
 import os
 
+import json
+
 os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = "auth.json"
 
 class LongSpeechToText(Resource):
     bucket_name = "capstone-audio-files"
-    # UPLOAD_FOLDER = os.path.join(os.path.dirname(os.path.abspath(__file__)), "input-audios")
+    UPLOAD_FOLDER = os.path.join(os.path.dirname(os.path.abspath(__file__)), "input-audios")
 
     def __init__(self):
         super().__init__()
@@ -74,7 +76,14 @@ class LongSpeechToText(Resource):
         # res = MessageToJson(response)
         result = response.results[-1]
         words_info = result.alternatives[0].words
-        print(words_info)
+        # print(words_info)
+
+        # result_json = response.__class__.to_json(response)
+        # result_dict = json.loads(result_json)
+        # print(result_dict.results[-1].alternatives[0].words)
+
+        # return result_dict
+        
 
         # speakerTag = 1
         # sentence = ""
@@ -91,5 +100,35 @@ class LongSpeechToText(Resource):
         # transcript += "speaker {}: {}".format(speakerTag,sentence)
         # print(transcript)
         # response = { gcs_uri, transcript }
+
+        sentenceInfo = []
+        speaker = words_info[0].speaker_tag
+        sentenceNo = 1
+
+        for word_info in enumerate(words_info, 1):
+            currentSpeaker = word_info[1].speaker_tag
+            currentWord = word_info[1].word
+            if(speaker == currentSpeaker):
+                key = 'speaker'+str(currentSpeaker)+'_sentence'+str(sentenceNo)
+                flagList = [i for i,x in enumerate(sentenceInfo) if key in x]
+                if len(flagList) > 0:
+                    newWord = " " + currentWord
+                    sentenceInfo[ flagList[0] ][key] += newWord
+                else:
+                    sentenceObj = {}
+                    sentenceObj[key] = currentWord
+                    sentenceInfo.append(sentenceObj)
+            else:
+                sentenceNo+=1
+                key = 'speaker'+str(currentSpeaker)+'_sentence'+str(sentenceNo)
+                speaker = currentSpeaker
+                sentenceObj = {}
+                sentenceObj[key] = currentWord
+                sentenceInfo.append(sentenceObj)
+
+        print(sentenceInfo)
+        response = { "gcs_uri": gcs_uri,
+                "transcript": sentenceInfo
+        }
         
-        # return res
+        return response
