@@ -12,7 +12,7 @@ import json
 os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = "auth.json"
 
 class LongSpeechToText(Resource):
-    bucket_name = "capstone-audio-files"
+    bucket_name = "capstone-audios"
     UPLOAD_FOLDER = os.path.join(os.path.dirname(os.path.abspath(__file__)), "input-audios")
 
     def __init__(self):
@@ -109,7 +109,7 @@ class LongSpeechToText(Resource):
             currentSpeaker = word_info[1].speaker_tag
             currentWord = word_info[1].word
             if(speaker == currentSpeaker):
-                key = 'speaker'+str(currentSpeaker)+'_sentence'+str(sentenceNo)
+                key = 'Speaker'+str(currentSpeaker)+'_Sentence'+str(sentenceNo)
                 flagList = [i for i,x in enumerate(sentenceInfo) if key in x]
                 if len(flagList) > 0:
                     newWord = " " + currentWord
@@ -120,7 +120,7 @@ class LongSpeechToText(Resource):
                     sentenceInfo.append(sentenceObj)
             else:
                 sentenceNo+=1
-                key = 'speaker'+str(currentSpeaker)+'_sentence'+str(sentenceNo)
+                key = 'Speaker'+str(currentSpeaker)+'_Sentence'+str(sentenceNo)
                 speaker = currentSpeaker
                 sentenceObj = {}
                 sentenceObj[key] = currentWord
