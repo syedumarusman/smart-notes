@@ -6,15 +6,22 @@ import matplotlib.pyplot as plt
 
 from nltk.corpus import stopwords
 from nltk.probability import FreqDist
-from nltk import word_tokenize, sent_tokenize, download
+from nltk import word_tokenize, sent_tokenize, download, data
 from flask_restful import Resource, reqparse
 
 class Summarization(Resource):
     def __init__(self):
         super().__init__()
         print("Text Summarization Module\n")
-        download('stopwords')
-        download('punkt')
+        try:
+            data.find('tokenizers/punkt')
+        except LookupError:
+            download('punkt')
+
+        try:
+            data.find('corpora/stopwords')
+        except LookupError:
+            download('stopwords')
 
     def post(self):
         # Request data parsing

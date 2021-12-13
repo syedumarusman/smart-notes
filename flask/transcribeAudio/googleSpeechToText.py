@@ -1,13 +1,10 @@
 from google.cloud import speech_v1p1beta1 as speech, storage
-from google.protobuf.json_format import MessageToJson, MessageToDict
 from flask_restful import Resource, request
 from flask import current_app as app
 from pydub import AudioSegment
 from werkzeug.utils import secure_filename
 import wave
 import os
-
-import json
 
 os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = "auth.json"
 
@@ -73,34 +70,10 @@ class LongSpeechToText(Resource):
         # Detects speech in the audio file
         operation = client.long_running_recognize(config=config, audio=audio)
         response = operation.result(timeout=10000)
-        # res = MessageToJson(response)
+
         result = response.results[-1]
         words_info = result.alternatives[0].words
-        # print(words_info)
-
-        # result_json = response.__class__.to_json(response)
-        # result_dict = json.loads(result_json)
-        # print(result_dict.results[-1].alternatives[0].words)
-
-        # return result_dict
         
-
-        # speakerTag = 1
-        # sentence = ""
-        # transcript = ''
-
-        # for word_info in words_info:
-        #     if word_info.speaker_tag == speakerTag:
-        #         sentence = sentence + " " + word_info.word
-        #     else:
-        #         transcript += "speaker {}: {}".format(speakerTag, sentence) + '\n'
-        #         speakerTag = word_info.speaker_tag
-        #         sentence = "" + word_info.word
-    
-        # transcript += "speaker {}: {}".format(speakerTag,sentence)
-        # print(transcript)
-        # response = { gcs_uri, transcript }
-
         sentenceInfo = []
         speaker = words_info[0].speaker_tag
         sentenceNo = 1
@@ -126,9 +99,8 @@ class LongSpeechToText(Resource):
                 sentenceObj[key] = currentWord
                 sentenceInfo.append(sentenceObj)
 
-        print(sentenceInfo)
-        response = { "gcs_uri": gcs_uri,
-                "transcript": sentenceInfo
+        response = { 
+            "gcs_uri": gcs_uri,
+            "transcript": sentenceInfo
         }
-        
         return response
