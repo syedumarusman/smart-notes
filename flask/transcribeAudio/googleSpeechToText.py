@@ -42,7 +42,7 @@ class LongSpeechToText(Resource):
         file = request.files["file"]
         speakerCount = request.form.get("speakerCount")
         min_speakers = 1
-        max_speakers = 5
+        max_speakers = 2
         if(speakerCount != None):
             min_speakers = int(speakerCount)
             max_speakers = int(speakerCount)
