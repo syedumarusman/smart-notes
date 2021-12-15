@@ -7,9 +7,15 @@ import matplotlib.pyplot as plt
 from nltk.corpus import stopwords
 from nltk.probability import FreqDist
 from nltk import word_tokenize, sent_tokenize, download, data
-from flask_restful import Resource, reqparse
+from flask_restful import Resource, request
+from flask import current_app as app
+from werkzeug.utils import secure_filename
+from google.cloud import storage
+import os
 
 class Summarization(Resource):
+    bucket_name = "capstone-summaries"
+
     def __init__(self):
         super().__init__()
         print("Text Summarization Module\n")
@@ -23,17 +29,46 @@ class Summarization(Resource):
         except LookupError:
             download('stopwords')
 
-    def post(self):
-        # Request data parsing
-        parser = reqparse.RequestParser()
-        parser.add_argument('text', type=str)
-        parser.add_argument('sentenceCount', type=int)
-        args = parser.parse_args()
-        text = args['text']
-        sentenceCount = args['sentenceCount']
-        if sentenceCount == None:
-            sentenceCount = 5
+    def upload_blob(self, bucket_name, source_file_name, destination_blob_name):
+        """Uploads a file to the bucket."""
+        storage_client = storage.Client()
+        bucket = storage_client.get_bucket(bucket_name)
+        blob = bucket.blob(destination_blob_name)
+        blob.upload_from_filename(source_file_name)
+ 
+    def get_blob_url(self, bucket_name, blob_name):
+        return f'gs://{bucket_name}/{blob_name}'
 
+
+    def post(self):
+        print("inside summary api")
+        # File parsing
+        file = request.files["file"]
+        sentenceCount = request.form.get("sentenceCount")
+        if(sentenceCount != None):
+            sentenceCount = int(sentenceCount)
+        filename = secure_filename(file.filename)
+        file_path = os.path.join(app.config['UPLOAD_SUMMARIES'], filename)
+        file.save(file_path)
+        # Reading Data
+        text = open(file_path,"r").read() # import text file extracted from audio
+        if sentenceCount == None:
+            sentenceCount = 3
+        sentences = self.summarize_text(text, sentenceCount)
+
+        # upload blob to cloud
+        self.upload_blob(self.bucket_name, file_path, filename)
+
+        # get gcs_uri of the audio file (blob) 
+        gcs_uri = self.get_blob_url(self.bucket_name, filename)
+
+        response = {
+            "gcs_uri": gcs_uri, 
+            "sentences": sentences
+        }
+        return response
+
+    def summarize_text(self, text, sentenceCount):
         # Cleaning Data
         text = re.sub(r'\[[0-9]*\]',' ', text)    
         text = re.sub(r'\s+',' ',text)
@@ -57,19 +92,6 @@ class Summarization(Resource):
                 else:
                     word2count[word]+=1
 
-        # Separating Words and it's count for plotting
-
-        count=list(word2count.values())
-        words=list(word2count.keys())
-
-        # Plotting Unprocessed Data with frequency
-
-        plt.figure(1, figsize=(20, 20))
-        fdist = FreqDist(tokenized_words)
-        fdist.plot(show=False)
-        plt.savefig('summarize/data-frequency.png', bbox_inches='tight')
-        plt.close()
-
         # Weighted Histogram
 
         for key in word2count.keys():
@@ -90,13 +112,5 @@ class Summarization(Resource):
         # Top n Sentences
 
         best_sentences = heapq.nlargest(sentenceCount,sent2score,key=sent2score.get)                    
-
-        # Plotting bar plot after processing
-        plt.figure(1, figsize=(20, 20))
-        plt.bar(words, count, width=0.7)
-        plt.xticks(rotation=90)
-        plt.title('Words Count Plot')
-        plt.savefig('summarize/word-count.png', bbox_inches='tight')
-        plt.close()
 
         return best_sentences

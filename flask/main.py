@@ -5,10 +5,12 @@ from summarize.summarization import Summarization
 from flask_cors import CORS
 import os
 
-UPLOAD_FOLDER = os.path.join(os.path.dirname(os.path.abspath(__file__)), "transcribeAudio/input-audios")
+UPLOAD_AUDIOS = os.path.join(os.path.dirname(os.path.abspath(__file__)), "transcribeAudio/input-audios")
+UPLOAD_SUMMARIES = os.path.join(os.path.dirname(os.path.abspath(__file__)), "summarize/input-summaries")
 
 app = Flask(__name__)
-app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+app.config['UPLOAD_AUDIOS'] = UPLOAD_AUDIOS
+app.config['UPLOAD_SUMMARIES'] = UPLOAD_SUMMARIES
 CORS(app)
 api = Api(app)
 

@@ -40,8 +40,14 @@ class LongSpeechToText(Resource):
 
     def post(self):
         file = request.files["file"]
+        speakerCount = request.form.get("speakerCount")
+        min_speakers = 1
+        max_speakers = 5
+        if(speakerCount != None):
+            min_speakers = int(speakerCount)
+            max_speakers = int(speakerCount)
         filename = secure_filename(file.filename)
-        file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+        file_path = os.path.join(app.config['UPLOAD_AUDIOS'], filename)
         file.save(file_path)
         frame_rate, channels = self.frame_rate_channel(file_path)
 
@@ -58,14 +64,20 @@ class LongSpeechToText(Resource):
         client = speech.SpeechClient()
         audio = speech.RecognitionAudio(uri=gcs_uri)
 
+        diarization_config = speech.SpeakerDiarizationConfig(
+            enable_speaker_diarization=True,
+            min_speaker_count=min_speakers,
+            max_speaker_count=max_speakers,
+        )
+
         # Setting speech recognition config
         config = speech.RecognitionConfig(
             encoding=speech.RecognitionConfig.AudioEncoding.LINEAR16,
             sample_rate_hertz= frame_rate,
             language_code= 'en-US',
-            enable_speaker_diarization= True,
             enable_automatic_punctuation= True,
-            diarization_speaker_count= 2)
+            diarization_config=diarization_config
+            )
 
         # Detects speech in the audio file
         operation = client.long_running_recognize(config=config, audio=audio)
