@@ -41,7 +41,6 @@ class Summarization(Resource):
 
 
     def post(self):
-        print("inside summary api")
         # File parsing
         file = request.files["file"]
         sentenceCount = request.form.get("sentenceCount")

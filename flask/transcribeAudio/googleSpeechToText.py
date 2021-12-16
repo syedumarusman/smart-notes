@@ -38,6 +38,86 @@ class LongSpeechToText(Resource):
     def get_blob_url(self, bucket_name, blob_name):
         return f'gs://{bucket_name}/{blob_name}'
 
+    def download_blob(self, bucket_name, source_blob_name, destination_file_name):
+        storage_client = storage.Client()
+        bucket=storage_client.bucket(bucket_name)
+        blob = bucket.blob(source_blob_name)
+        blob.download_to_filename(destination_file_name)
+
+    def get(self):
+        gcs_uri = request.args.get("gcs_uri")
+        min_speakers = 1
+        max_speakers = 2
+
+        # store blob locally
+        strSplit = gcs_uri.split("/")
+        filename = strSplit[len(strSplit)-1]
+        file_path = os.path.join(app.config['UPLOAD_AUDIOS'], filename)
+        self.download_blob(self.bucket_name, filename, file_path)
+        frame_rate, channels = self.frame_rate_channel(file_path)
+
+        if channels > 1:
+            self.stereo_to_mono(file_path)
+
+        # Initialize speech client
+        client = speech.SpeechClient()
+        audio = speech.RecognitionAudio(uri=gcs_uri)
+
+        diarization_config = speech.SpeakerDiarizationConfig(
+            enable_speaker_diarization=True,
+            min_speaker_count=min_speakers,
+            max_speaker_count=max_speakers,
+        )
+
+        # Setting speech recognition config
+        config = speech.RecognitionConfig(
+            encoding=speech.RecognitionConfig.AudioEncoding.LINEAR16,
+            sample_rate_hertz= frame_rate,
+            language_code= 'en-US',
+            enable_automatic_punctuation= True,
+            diarization_config=diarization_config
+            )
+
+        # Detects speech in the audio file
+        operation = client.long_running_recognize(config=config, audio=audio)
+        response = operation.result(timeout=10000)
+
+        result = response.results[-1]
+        words_info = result.alternatives[0].words
+        
+        sentenceInfo = []
+        speaker = words_info[0].speaker_tag
+        sentenceNo = 1
+
+        for word_info in enumerate(words_info, 1):
+            currentSpeaker = word_info[1].speaker_tag
+            currentWord = word_info[1].word
+            if(speaker == currentSpeaker):
+                key = 'Speaker'+str(currentSpeaker)+'_Sentence'+str(sentenceNo)
+                flagList = [i for i,x in enumerate(sentenceInfo) if key in x]
+                if len(flagList) > 0:
+                    newWord = " " + currentWord
+                    sentenceInfo[ flagList[0] ][key] += newWord
+                else:
+                    sentenceObj = {}
+                    sentenceObj[key] = currentWord
+                    sentenceInfo.append(sentenceObj)
+            else:
+                sentenceNo+=1
+                key = 'Speaker'+str(currentSpeaker)+'_Sentence'+str(sentenceNo)
+                speaker = currentSpeaker
+                sentenceObj = {}
+                sentenceObj[key] = currentWord
+                sentenceInfo.append(sentenceObj)
+
+        response = { 
+            "gcs_uri": gcs_uri,
+            "transcript": sentenceInfo
+        }
+        return response
+
+
+
     def post(self):
         file = request.files["file"]
         speakerCount = request.form.get("speakerCount")
