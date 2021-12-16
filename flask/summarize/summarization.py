@@ -39,6 +39,26 @@ class Summarization(Resource):
     def get_blob_url(self, bucket_name, blob_name):
         return f'gs://{bucket_name}/{blob_name}'
 
+    def download_blob(self, bucket_name, source_blob_name, destination_file_name):
+        storage_client = storage.Client()
+        bucket=storage_client.bucket(bucket_name)
+        blob = bucket.blob(source_blob_name)
+        blob.download_to_filename(destination_file_name)
+
+    def get(self):
+        # download file using gcs_uri
+        gcs_uri = request.args.get("gcs_uri")
+        # store blob locally
+        strSplit = gcs_uri.split("/")
+        filename = strSplit[len(strSplit)-1]
+        file_path = os.path.join(app.config['UPLOAD_SUMMARIES'], filename)
+        self.download_blob(self.bucket_name, filename, file_path)
+        # import text file extracted that was downloaded
+        text = open(file_path,"r").read() 
+        sentenceCount = 5
+        # get summarized sentences
+        sentences = self.summarize_text(text, sentenceCount)
+        return sentences
 
     def post(self):
         # File parsing
